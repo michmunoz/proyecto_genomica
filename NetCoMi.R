@@ -32,13 +32,23 @@ baja<-subset_samples(soilrep, warmed == "no")
 #utiliza la corrrelación de Pearson
 net <- netConstruct(data = baja, data2 = alta, filtTax = "highestVar", filtTaxPar = list(highestVar = 500),
   zeroMethod = "pseudo", normMethod = "clr", measure = "pearson", verbose = 0)
+netALTA <- netConstruct(data = alta, filtTax = "highestVar", filtTaxPar = list(highestVar = 500),
+                    zeroMethod = "pseudo", normMethod = "clr", measure = "pearson", verbose = 0)
+netBAJA<- netConstruct(data = baja, filtTax = "highestVar", filtTaxPar = list(highestVar = 500),
+                    zeroMethod = "pseudo", normMethod = "clr", measure = "pearson", verbose = 0)
 
 #Analizar y visualizar las redes
 #Analisis de la red: nodos, densidad, diametro, degrees, medidas de centralidad, etc.
-analisis<- netAnalyze(net, clustMethod = "cluster_fast_greedy") #fast_greedy  es usado para detectar comunidades
+analisis<- netAnalyze(net, clustMethod = "cluster_fast_greedy")#fast_greedy  es usado para detectar comunidades
+
+analisisalta<- netAnalyze(netALTA, clustMethod = "cluster_fast_greedy")
+analisisbaja<- netAnalyze(netBAJA, clustMethod = "cluster_fast_greedy")
 
 plot(analisis, sameLayout = TRUE, layoutGroup = "union", nodeColor = "cluster", hubLabelThreshold = 0.8, 
      groupNames = c("muestra de suelo 1: no calentado", "Muestra de suelo 2: calentado"))
+
+plot(analisisalta, sameLayout = TRUE, layoutGroup = "union", nodeColor = "cluster", hubLabelThreshold = 0.8)
+plot(analisisbaja, sameLayout = TRUE, layoutGroup = "union", nodeColor = "cluster", hubLabelThreshold = 0.8)
 
 #obtener una matriz de adyacencias ponderada
 adj_mat <- net$adjaMat1   
@@ -49,17 +59,28 @@ write.csv(adj_mat, "matrizponderada.csv")
 #Hacer subsets
 UC<-subset_samples(soilrep, Treatment == "UC")
 UU<-subset_samples(soilrep, Treatment == "UU")
+
 #hacer matrices de abundancia
 matrizUC<- as(otu_table(UC), "matrix")
 matrizUU<- as(otu_table(UU), "matrix")
+
+#Taxones
+taxones<- intersect(rownames(matrizUC), rownames(matrizUU))
+matrizUC<- matrizUC[taxones, ]
+matrizUU<- matrizUU[taxones, ]
 #Construir la red
 constredUC<- netConstruct(data = matrizUC, normMethod = "clr", measure = "pearson", verbose = 0)
 constredUU<- netConstruct(data = matrizUU, normMethod = "clr", measure = "pearson", verbose = 0)
-
+#Analizar las redes
 analisisUC <- netAnalyze(constredUC, clustMethod = "cluster_fast_greedy")
 analisisUU <- netAnalyze(constredUU, clustMethod = "cluster_fast_greedy")
 
+#COMPARACIÓN DE LOS DOS GRUPOS
+summ<- summary(analisisUC)
+summ2<- summary(analisisUU)
 
-net_comparison <- netCompare(
-  net1 = analisisUC,
-  net2 = analisisUU)
+Viewtable(summ)
+
+#REDES
+plot(analisisUC)
+plot(analisisUU)
